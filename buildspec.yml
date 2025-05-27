@@ -3,15 +3,24 @@ version: 0.2
 phases:
   install:
     commands:
-      # No runtime-versions needed for AL2023
-      - echo "Install phase - no setup needed"
+      - echo "Installing dependencies..."
+      # Check if composer is installed
+      - if ! [ -x "$(command -v composer)" ]; then
+          php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');";
+          php composer-setup.php --install-dir=/usr/local/bin --filename=composer;
+          php -r "unlink('composer-setup.php');";
+        fi
+      - composer install --no-dev --optimize-autoloader
+
   build:
     commands:
       - echo "Zipping application files..."
-      - zip -r app.zip . -x "*.git*" "tests/*" "scripts/*"
+      - zip -r app.zip . -x "**/.git/**" "**/tests/**" "**/scripts/**" "**/storage/logs/**" "**/storage/framework/**" "**/vendor/**" ".env" "*.env" "*.md" "*.txt" "docker/**"
+
   post_build:
     commands:
-      - echo "Build complete. Ready for deployment."
+      - echo "Build complete. File size: $(du -sh app.zip | cut -f1)"
+      - echo "Deployment package ready for AWS Elastic Beanstalk"
 
 artifacts:
   files:
