@@ -3,25 +3,51 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo "Installing dependencies..."
-      # Check if composer is installed
-      - if ! [ -x "$(command -v composer)" ]; then
-          php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');";
-          php composer-setup.php --install-dir=/usr/local/bin --filename=composer;
-          php -r "unlink('composer-setup.php');";
-        fi
-      - composer install --no-dev --optimize-autoloader
+      - echo "PHP Version: $(php -v)"
+      - echo "Installing system dependencies..."
+      - sudo dnf install -y zip unzip
+
+      # Install Composer
+      - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+      - php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+      - php -r "unlink('composer-setup.php');"
+      - echo "Composer Version: $(composer --version)"
+
+      # Install PHP dependencies
+      - composer install --no-dev --no-interaction --optimize-autoloader
 
   build:
     commands:
-      - echo "Zipping application files..."
-      - zip -r app.zip . -x "**/.git/**" "**/tests/**" "**/scripts/**" "**/storage/logs/**" "**/storage/framework/**" "**/vendor/**" ".env" "*.env" "*.md" "*.txt" "docker/**"
+      - echo "Building application package..."
+      - echo "Directory structure:"
+      - ls -al
+
+      # Set file permissions (adjust for your framework if needed)
+      - chmod -R 755 storage bootstrap/cache
+
+      # Create deployment package
+      - zip -r app.zip . -x \
+        ".git/*" \
+        ".github/*" \
+        ".env*" \
+        "docker/*" \
+        "tests/*" \
+        "scripts/*" \
+        "*.md" \
+        "*.txt" \
+        "phpunit.xml" \
+        "storage/logs/*" \
+        "node_modules/*" \
+        "vendor/*"
 
   post_build:
     commands:
-      - echo "Build complete. File size: $(du -sh app.zip | cut -f1)"
-      - echo "Deployment package ready for AWS Elastic Beanstalk"
+      - echo "Build complete! Final package info:"
+      - ls -lh app.zip
+      - echo "Zip contents:"
+      - unzip -l app.zip | head -20
 
 artifacts:
   files:
     - app.zip
+  discard-paths: yes
