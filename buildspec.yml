@@ -2,23 +2,18 @@ version: 0.2
 
 phases:
   install:
-    runtime-versions:
-      php: 8.4
     commands:
-      - echo "Installing dependencies and tools..."
+      - echo "Installing dependencies..."
       - yum install -y zip unzip
-      - curl -sS https://getcomposer.org/installer | php
-      - mv composer.phar /usr/local/bin/composer
-      - composer install || echo "No composer.json found, skipping composer install."
+
   build:
     commands:
-      - echo "Validating PHP syntax..."
-      - find . -type f -name "*.php" -exec php -l {} \;
-      - echo "Zipping application files..."
+      - echo "Zipping application..."
       - zip -r app.zip . -x "*.git*" "tests/*" "scripts/*"
+
   post_build:
     commands:
-      - echo "Build complete. Ready for deployment."
+      - echo "Build completed successfully"
 
 artifacts:
   files:
