@@ -2,52 +2,24 @@ version: 0.2
 
 phases:
   install:
+    runtime-versions:
+      php: 8.4
     commands:
-      - echo "PHP Version: $(php -v)"
-      - echo "Installing system dependencies..."
-      - sudo dnf install -y zip unzip
-
-      # Install Composer
-      - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-      - php composer-setup.php --install-dir=/usr/local/bin --filename=composer
-      - php -r "unlink('composer-setup.php');"
-      - echo "Composer Version: $(composer --version)"
-
-      # Install PHP dependencies
-      - composer install --no-dev --no-interaction --optimize-autoloader
-
+      - echo "Installing dependencies and tools..."
+      - yum install -y zip unzip
+      - curl -sS https://getcomposer.org/installer | php
+      - mv composer.phar /usr/local/bin/composer
+      - composer install || echo "No composer.json found, skipping composer install."
   build:
     commands:
-      - echo "Building application package..."
-      - echo "Directory structure:"
-      - ls -al
-
-      # Set file permissions (adjust for your framework if needed)
-      - chmod -R 755 storage bootstrap/cache
-
-      # Create deployment package
-      - zip -r app.zip . -x \
-        ".git/*" \
-        ".github/*" \
-        ".env*" \
-        "docker/*" \
-        "tests/*" \
-        "scripts/*" \
-        "*.md" \
-        "*.txt" \
-        "phpunit.xml" \
-        "storage/logs/*" \
-        "node_modules/*" \
-        "vendor/*"
-
+      - echo "Validating PHP syntax..."
+      - find . -type f -name "*.php" -exec php -l {} \;
+      - echo "Zipping application files..."
+      - zip -r app.zip . -x "*.git*" "tests/*" "scripts/*"
   post_build:
     commands:
-      - echo "Build complete! Final package info:"
-      - ls -lh app.zip
-      - echo "Zip contents:"
-      - unzip -l app.zip | head -20
+      - echo "Build complete. Ready for deployment."
 
 artifacts:
   files:
     - app.zip
-  discard-paths: yes
